@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>3D Snake</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="main.css" />
+</head>
+
+<body>
+    <section class="intro" id="intro">
+        <div class="intro__message">
+            <h1 class="intro__message__heading">3D Snake Game</h1>
+            <h2 class="intro__message__sub-heading">How to play:</h2>
+            <p class="intro__message__body">
+                The rules are similar to your standard, 2D, version of snake. The goal is to eat as many blocks
+                as possible without hitting the sides of the game container, or colliding into yourself. Each
+                block that you eat increases the size of the snake.
+            </p>
+            <p class="intro__message__body">
+                Navigation is a bit more tricky due to navigating in three dimensions. You can use the arrow keys
+                or the W, S, A, D keys to direct the snake, and can drag the container with your mouse to change
+                your perspective. All changes in the snake's direction are relative to its current direction.
+            </p>
+            <div class="button" id="startButton">Let's Play</div>
+        </div>
+    </section>
+
+    <section class="outro" id="outro">
+        <div class="outro__message">
+            <h1 class="outro__heading">Game Over</h1>
+            <div class="button" id="resetButton">Reset</div>
+        </div>
+    </section>
+
+    <div id="canvas"></div>
+
+    <script src="https://threejs.org/build/three.min.js"></script>
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://github.com/mrdoob/stats.js/blob/master/build/stats.js"></script>
+    <script src="https://stemkoski.github.io/Three.js/js/KeyboardState.js"></script>
+    <script src="tween.js"></script>
+    <script src="index.js"></script>
+</body>
+
+</html>
