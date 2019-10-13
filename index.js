@@ -3,17 +3,27 @@
         camera,
         canvas,
         controls,
+        top, bottom, front, back, left, right,
         currentDirection = 'f',
         lastDirection = 'f',
+        wasSegmentAdded = false,
         scene,
         keyboard = new KeyboardState(),
         renderer,
         isGameOver,
+        ANIMATION_DELAY = 20,
+        MIN_ANIMATION_DELAY = 10,
         CONTAINER_SIZE = 2000,
         currentSnakeFood,
         animationIterations = 0,
+        SCORE = 0,
         SNAKE_SEGMENT_SIZE = 100,
         SNAKE = [];
+
+    function toRadians(degrees) {
+        var pi = Math.PI;
+        return degrees * (pi / 180);
+    }
 
     function introTween() {
         document.getElementById("intro").classList.add("fade-out");
@@ -34,6 +44,7 @@
         scene = null;
         renderer = null;
         isGameOver = false;
+        SCORE = 0;
         SNAKE = [];
         document.getElementById("outro").classList.remove("fade-in");
         emptyContainer();
@@ -83,29 +94,93 @@
         context.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    function addGameContainer() {
-        var cube = new THREE.BoxGeometry(CONTAINER_SIZE, CONTAINER_SIZE, CONTAINER_SIZE);
-        var material = new THREE.MeshPhongMaterial({
-            color: new THREE.Color(0xffffff),
-            wireframe: true
+    function createPlaneMaterial() {
+        return new THREE.MeshLambertMaterial({
+            color: new THREE.Color(0x00ff00),
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.1,
         });
-        var mesh = new THREE.Mesh(cube, material);
+    }
 
-        scene.add(mesh);
+    function addGameContainer() {
+        var planeGeometry = new THREE.PlaneBufferGeometry(CONTAINER_SIZE, CONTAINER_SIZE, 32)
+        var topGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x666666, 0x666666);
+        topGrid.position.y = CONTAINER_SIZE / 2;
+
+        var bottomGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x666666, 0x666666);
+        bottomGrid.position.y = -CONTAINER_SIZE / 2;
+
+        var frontGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x666666, 0x666666);
+        frontGrid.rotation.x = toRadians(90);
+        frontGrid.position.z = -CONTAINER_SIZE / 2;
+
+        var backGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x666666, 0x666666);
+        backGrid.rotation.x = toRadians(90);
+        backGrid.position.z = CONTAINER_SIZE / 2;
+
+        var rightGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x666666, 0x666666);
+        rightGrid.rotation.z = toRadians(90);
+        rightGrid.position.x = -CONTAINER_SIZE / 2;
+
+        var leftGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x666666, 0x666666);
+        leftGrid.rotation.z = toRadians(90);
+        leftGrid.position.x = CONTAINER_SIZE / 2;
+
+        top = new THREE.Mesh(planeGeometry, createPlaneMaterial());
+        top.name = "top";
+        top.position.y = 1000;
+        top.rotation.x = toRadians(90);
+
+        bottom = new THREE.Mesh(planeGeometry, createPlaneMaterial());
+        bottom.name = "bottom";
+        bottom.position.y = -1000;
+        bottom.rotation.x = toRadians(90);
+
+        front = new THREE.Mesh(planeGeometry, createPlaneMaterial());
+        front.name = "front";
+        front.position.z = -1000;
+
+        back = new THREE.Mesh(planeGeometry, createPlaneMaterial());
+        back.name = "back";
+        back.position.z = 1000;
+
+        left = new THREE.Mesh(planeGeometry, createPlaneMaterial());
+        left.name = "left";
+        left.rotation.y = toRadians(90);
+        left.position.x = -1000;
+
+        right = new THREE.Mesh(planeGeometry, createPlaneMaterial());
+        right.name = "right";
+        right.rotation.y = toRadians(90);
+        right.position.x = 1000;
+
+        scene.add(top);
+        scene.add(bottom);
+        scene.add(front);
+        scene.add(back);
+        scene.add(left);
+        scene.add(right);
+        scene.add(topGrid);
+        scene.add(bottomGrid);
+        scene.add(frontGrid);
+        scene.add(backGrid);
+        scene.add(rightGrid);
+        scene.add(leftGrid);
     }
 
     function addSnakeFood() {
-        var size = Math.random() * 50 + 50;
+        var size = Math.random() * 30 + 80;
         var sphereGeometry = new THREE.BoxGeometry(size, size, size);
-        var material = new THREE.MeshPhongMaterial({
+        var material = new THREE.MeshLambertMaterial({
             color: new THREE.Color(0xffffff * Math.random())
         });
         currentSnakeFood = new THREE.Mesh(sphereGeometry, material);
 
         currentSnakeFood.position.set(
-            Math.floor(Math.random() * (1000 + 1000 + 1)) - 1000,
-            Math.floor(Math.random() * (1000 + 1000 + 1)) - 1000,
-            Math.floor(Math.random() * (1000 + 1000 + 1)) - 1000
+            Math.floor(Math.random() * (CONTAINER_SIZE / 2 - SNAKE_SEGMENT_SIZE)) - (CONTAINER_SIZE / 2 - SNAKE_SEGMENT_SIZE),
+            Math.floor(Math.random() * (CONTAINER_SIZE / 2 - SNAKE_SEGMENT_SIZE)) - (CONTAINER_SIZE / 2 - SNAKE_SEGMENT_SIZE),
+            Math.floor(Math.random() * (CONTAINER_SIZE / 2 - SNAKE_SEGMENT_SIZE)) - (CONTAINER_SIZE / 2 - SNAKE_SEGMENT_SIZE)
         );
         currentSnakeFood.name = 'snakeFood';
         scene.add(currentSnakeFood);
@@ -114,13 +189,13 @@
     function buildSnake() {
         for (let i = 0; i < 5; i++) {
             var segmentGeometry = new THREE.BoxGeometry(SNAKE_SEGMENT_SIZE, SNAKE_SEGMENT_SIZE, SNAKE_SEGMENT_SIZE);
-            var segmentMaterial = new THREE.MeshPhongMaterial({
+            var segmentMaterial = new THREE.MeshLambertMaterial({
                 color: new THREE.Color(0xffffff)
             });
             var snakeSegment = new THREE.Mesh(segmentGeometry, segmentMaterial);
             var position = -1000 - (i * SNAKE_SEGMENT_SIZE);
 
-            snakeSegment.position.set(0, 0, position);
+            snakeSegment.position.set(SNAKE_SEGMENT_SIZE / 2, SNAKE_SEGMENT_SIZE / 2, position + SNAKE_SEGMENT_SIZE / 2);
 
             var outlineGeometry = new THREE.EdgesGeometry(snakeSegment.geometry);
             var outlineMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 8 });
@@ -178,6 +253,40 @@
 
         // move the last array item to the beginning
         SNAKE.unshift(SNAKE.pop());
+    }
+
+    function updateScore() {
+        var scoreHolder = document.getElementById("score");
+        SCORE++;
+        if (scoreHolder)
+            scoreHolder.innerHTML = SCORE;
+    }
+
+    function updateWallColors() {
+        var distanceToTop = Math.abs((top.position.y - SNAKE[0].position.y) / 20);
+        var distanceToBottom = Math.abs((bottom.position.y - SNAKE[0].position.y) / 20);
+        var distanceToBack = Math.abs((back.position.z - SNAKE[0].position.z) / 20);
+        var distanceToFront = Math.abs((front.position.z - SNAKE[0].position.z) / 20);
+        var distanceToLeft = Math.abs((left.position.x - SNAKE[0].position.x) / 20);
+        var distanceToRight = Math.abs((right.position.x - SNAKE[0].position.x) / 20);
+
+        top.material.opacity = 1 / distanceToTop
+        top.material.color.setRGB(255 - distanceToTop, 0, 0);
+
+        bottom.material.opacity = 1 / distanceToBottom
+        bottom.material.color.setRGB(255 - distanceToBottom, 0, 0);
+
+        back.material.opacity = 1 / distanceToBack
+        back.material.color.setRGB(255 - distanceToBack, 0, 0);
+
+        front.material.opacity = 1 / distanceToFront
+        front.material.color.setRGB(255 - distanceToFront, 0, 0);
+
+        right.material.opacity = 1 / distanceToRight
+        right.material.color.setRGB(255 - distanceToRight, 0, 0);
+
+        left.material.opacity = 1 / distanceToLeft
+        left.material.color.setRGB(255 - distanceToLeft, 0, 0);
     }
 
     function updateCameraPosition(newX, newY, newZ) {
@@ -371,22 +480,28 @@
     function checkFoodIntersection() {
         var distance = SNAKE[0].position.distanceTo(currentSnakeFood.position);
 
-        if (distance < SNAKE_SEGMENT_SIZE) {
-            removeObject(currentSnakeFood);
-            addNewSnakeSegment();
-            addSnakeFood();
-        }
+        if (distance < SNAKE_SEGMENT_SIZE) handleFoodIntersection();
+    }
+
+    function handleFoodIntersection() {
+        updateScore();
+        removeObject(currentSnakeFood);
+        addNewSnakeSegment();
+        addSnakeFood();
+
+        if (ANIMATION_DELAY > MIN_ANIMATION_DELAY)
+            ANIMATION_DELAY--;
     }
 
     function checkBoundaryHit() {
         var firstSegmentPosition = SNAKE[0].position;
 
-        if (firstSegmentPosition.x > CONTAINER_SIZE / 2 ||
-            firstSegmentPosition.x < -CONTAINER_SIZE / 2 ||
-            firstSegmentPosition.y > CONTAINER_SIZE / 2 ||
-            firstSegmentPosition.y < -CONTAINER_SIZE / 2 ||
-            firstSegmentPosition.z > CONTAINER_SIZE / 2 ||
-            firstSegmentPosition.z < -CONTAINER_SIZE / 2) {
+        if (firstSegmentPosition.x > (CONTAINER_SIZE / 2) ||
+            firstSegmentPosition.x < (-CONTAINER_SIZE / 2) ||
+            firstSegmentPosition.y > (CONTAINER_SIZE / 2) ||
+            firstSegmentPosition.y < (-CONTAINER_SIZE / 2) ||
+            firstSegmentPosition.z > (CONTAINER_SIZE / 2) ||
+            firstSegmentPosition.z < (-CONTAINER_SIZE / 2)) {
             handleGameEnd();
         }
 
@@ -405,13 +520,20 @@
             checkKeyPress();
             checkFoodIntersection();
             checkBoundaryHit();
+            updateWallColors();
 
             renderer.render(scene, camera);
             controls.update();
             TWEEN.update();
             camera.lookAt(scene.position);
 
-            if (animationIterations % 30 === 0) updateSnake();
+            if (animationIterations % ANIMATION_DELAY === 0) {
+                if (!wasSegmentAdded) {
+                    updateSnake();
+                } else {
+                    wasSegmentAdded = false
+                }
+            }
 
             animationIterations += 1;
         }
@@ -430,5 +552,6 @@
         animate();
     }
 
+    introTween() //remove
     document.getElementById("startButton").addEventListener("click", introTween, false);
 })();
