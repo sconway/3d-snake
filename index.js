@@ -8,10 +8,11 @@
         lastDirection = 'f',
         wasSegmentAdded = false,
         scene,
+        isKeyboardReady = true,
         keyboard = new KeyboardState(),
         renderer,
         isGameOver,
-        ANIMATION_DELAY = 20,
+        ANIMATION_DELAY = 25,
         MIN_ANIMATION_DELAY = 10,
         CONTAINER_SIZE = 2000,
         currentSnakeFood,
@@ -21,8 +22,7 @@
         SNAKE = [];
 
     function toRadians(degrees) {
-        var pi = Math.PI;
-        return degrees * (pi / 180);
+        return degrees * (Math.PI / 180);
     }
 
     function introTween() {
@@ -32,7 +32,20 @@
 
     function handleGameEnd() {
         isGameOver = true;
-        document.getElementById("outro").classList.add("fade-in");
+
+        var cubeGeometry = new THREE.BoxGeometry(SNAKE_SEGMENT_SIZE + 2, SNAKE_SEGMENT_SIZE + 2, SNAKE_SEGMENT_SIZE + 2);
+        var material = new THREE.MeshLambertMaterial({
+            color: new THREE.Color(0xff0000)
+        });
+        var gameEndingPiece = new THREE.Mesh(cubeGeometry, material);
+        gameEndingPiece.renderOrder = 1;
+        gameEndingPiece.position.set(SNAKE[0].position.x, SNAKE[0].position.y, SNAKE[0].position.z);
+
+        scene.add(gameEndingPiece);
+
+        setTimeout(() => {
+            document.getElementById("outro").classList.add("fade-in");
+        }, 500);
     }
 
     function handleGameReset() {
@@ -44,6 +57,8 @@
         scene = null;
         renderer = null;
         isGameOver = false;
+        isKeyboardReady = true;
+        wasSegmentAdded = false;
         SCORE = 0;
         SNAKE = [];
         document.getElementById("outro").classList.remove("fade-in");
@@ -100,6 +115,22 @@
             side: THREE.DoubleSide,
             transparent: true,
             opacity: 0.1,
+        });
+    }
+
+    function createCustomMaterial() {
+        return new THREE.ShaderMaterial({
+            uniforms:
+            {
+                "c": { type: "f", value: 0.9 },
+                "p": { type: "f", value: 0.3 },
+                glowColor: { type: "c", value: new THREE.Color(0xffffff) },
+                viewVector: { type: "v3", value: camera.position }
+            },
+            vertexShader: document.getElementById('vertexShader').textContent,
+            fragmentShader: document.getElementById('fragmentShader').textContent,
+            side: THREE.FrontSide,
+            blending: THREE.NormalBlending
         });
     }
 
@@ -171,11 +202,11 @@
 
     function addSnakeFood() {
         var size = Math.random() * 30 + 80;
-        var sphereGeometry = new THREE.BoxGeometry(size, size, size);
+        var cubeGeometry = new THREE.BoxGeometry(size, size, size);
         var material = new THREE.MeshLambertMaterial({
             color: new THREE.Color(0xffffff * Math.random())
         });
-        currentSnakeFood = new THREE.Mesh(sphereGeometry, material);
+        currentSnakeFood = new THREE.Mesh(cubeGeometry, material);
 
         currentSnakeFood.position.set(
             Math.floor(Math.random() * (CONTAINER_SIZE / 2 - SNAKE_SEGMENT_SIZE)) - (CONTAINER_SIZE / 2 - SNAKE_SEGMENT_SIZE),
@@ -189,19 +220,10 @@
     function buildSnake() {
         for (let i = 0; i < 5; i++) {
             var segmentGeometry = new THREE.BoxGeometry(SNAKE_SEGMENT_SIZE, SNAKE_SEGMENT_SIZE, SNAKE_SEGMENT_SIZE);
-            var segmentMaterial = new THREE.MeshLambertMaterial({
-                color: new THREE.Color(0xffffff)
-            });
-            var snakeSegment = new THREE.Mesh(segmentGeometry, segmentMaterial);
+            var snakeSegment = new THREE.Mesh(segmentGeometry, createCustomMaterial());
             var position = -1000 - (i * SNAKE_SEGMENT_SIZE);
 
             snakeSegment.position.set(SNAKE_SEGMENT_SIZE / 2, SNAKE_SEGMENT_SIZE / 2, position + SNAKE_SEGMENT_SIZE / 2);
-
-            var outlineGeometry = new THREE.EdgesGeometry(snakeSegment.geometry);
-            var outlineMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 8 });
-            var wireframe = new THREE.LineSegments(outlineGeometry, outlineMaterial);
-            wireframe.renderOrder = 1; // make sure wireframes are rendered 2nd
-            snakeSegment.add(wireframe);
 
             SNAKE.push(snakeSegment);
         }
@@ -263,12 +285,12 @@
     }
 
     function updateWallColors() {
-        var distanceToTop = Math.abs((top.position.y - SNAKE[0].position.y) / 20);
-        var distanceToBottom = Math.abs((bottom.position.y - SNAKE[0].position.y) / 20);
-        var distanceToBack = Math.abs((back.position.z - SNAKE[0].position.z) / 20);
-        var distanceToFront = Math.abs((front.position.z - SNAKE[0].position.z) / 20);
-        var distanceToLeft = Math.abs((left.position.x - SNAKE[0].position.x) / 20);
-        var distanceToRight = Math.abs((right.position.x - SNAKE[0].position.x) / 20);
+        var distanceToTop = Math.abs((top.position.y - SNAKE[0].position.y) / 30);
+        var distanceToBottom = Math.abs((bottom.position.y - SNAKE[0].position.y) / 30);
+        var distanceToBack = Math.abs((back.position.z - SNAKE[0].position.z) / 30);
+        var distanceToFront = Math.abs((front.position.z - SNAKE[0].position.z) / 30);
+        var distanceToLeft = Math.abs((left.position.x - SNAKE[0].position.x) / 30);
+        var distanceToRight = Math.abs((right.position.x - SNAKE[0].position.x) / 30);
 
         top.material.opacity = 1 / distanceToTop
         top.material.color.setRGB(255 - distanceToTop, 0, 0);
@@ -302,10 +324,7 @@
 
     function addNewSnakeSegment() {
         var segmentGeometry = new THREE.BoxGeometry(SNAKE_SEGMENT_SIZE, SNAKE_SEGMENT_SIZE, SNAKE_SEGMENT_SIZE);
-        var segmentMaterial = new THREE.MeshPhongMaterial({
-            color: new THREE.Color(0xffffff),
-        });
-        var snakeSegment = new THREE.Mesh(segmentGeometry, segmentMaterial);
+        var snakeSegment = new THREE.Mesh(segmentGeometry, createCustomMaterial());
         var firstSegmentPosition = SNAKE[0].position;
 
         snakeSegment.position.set(
@@ -313,12 +332,6 @@
             firstSegmentPosition.y + getNewYPosition(),
             firstSegmentPosition.z + getNewZPosition()
         );
-
-        var outlineGeometry = new THREE.EdgesGeometry(snakeSegment.geometry);
-        var outlineMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 8 });
-        var wireframe = new THREE.LineSegments(outlineGeometry, outlineMaterial);
-        wireframe.renderOrder = 1; // make sure wireframes are rendered 2nd
-        snakeSegment.add(wireframe);
 
         SNAKE.unshift(snakeSegment);
         scene.add(snakeSegment);
@@ -332,129 +345,126 @@
     function handleLeftTurn() {
         lastDirection = currentDirection;
         currentDirection = 'l';
-        // updateCameraPosition(-6000, SNAKE[0].position.y + 500, SNAKE[0].position.z);
-        // updateCameraPosition(-4000, 4000, -5000);
-        // updateCameraPosition(-6000, 100, 100);
     }
 
     function handleRightTurn() {
         lastDirection = currentDirection;
         currentDirection = 'r';
-        // updateCameraPosition(6000, SNAKE[0].position.y + 500, SNAKE[0].position.z);
-        // updateCameraPosition(4000, 4000, -5000);
-        // updateCameraPosition(6000, 100, 100);
     }
 
     function handleDownTurn() {
         lastDirection = currentDirection;
         currentDirection = 'd';
-        // updateCameraPosition(SNAKE[0].position.x, 6000, SNAKE[0].position.z);
-        // updateCameraPosition(0, -4000, -8000);
-        // updateCameraPosition(100, -6000, 100);
     }
 
     function handleUpTurn() {
         lastDirection = currentDirection;
         currentDirection = 'u';
-        // updateCameraPosition(SNAKE[0].position.x, -6000, SNAKE[0].position.z);
-        // updateCameraPosition(0, 4000, -8000);
-        // updateCameraPosition(100, 6000, 100);
     }
 
     function handleForwardTurn() {
         lastDirection = currentDirection;
         currentDirection = 'f';
-        // updateCameraPosition(SNAKE[0].position.x, SNAKE[0].position.y + 500, -6000);
-        // updateCameraPosition(3000, 4000, -6000);
-        // updateCameraPosition(100, 100, -6000);
     }
 
     function handleBackTurn(offset = -2500) {
         lastDirection = currentDirection;
         currentDirection = 'b';
-        // updateCameraPosition(SNAKE[0].position.x, SNAKE[0].position.y + 500, 6000);
-        // updateCameraPosition(-8000, 5000, -3000);
-        // updateCameraPosition(100, 100, -6000);
+    }
+
+    function keyboardDebounce() {
+        isKeyboardReady = false;
+        setTimeout(() => { isKeyboardReady = true; }, 200);
     }
 
     function checkKeyPress() {
         keyboard.update();
 
-        if (keyboard.down("left") || keyboard.down("A")) {
-            if (currentDirection === 'f') {
-                handleLeftTurn();
-            } else if (currentDirection === 'l') {
-                handleBackTurn(2500);
-            } else if (currentDirection === 'r') {
-                handleForwardTurn();
-            } else if (currentDirection === 'b') {
-                handleRightTurn();
-            } else if (currentDirection === 'u' || currentDirection === 'd') {
-                if (lastDirection === 'l') {
+        if (isKeyboardReady) {
+            if (keyboard.down("left") || keyboard.down("A")) {
+                if (currentDirection === 'f') {
+                    handleLeftTurn();
+                } else if (currentDirection === 'l') {
                     handleBackTurn(2500);
-                } else if (lastDirection === 'r') {
+                } else if (currentDirection === 'r') {
                     handleForwardTurn();
-                } else if (lastDirection === 'b') {
-                    handleRightTurn(2500);
-                } else {
-                    handleLeftTurn();
+                } else if (currentDirection === 'b') {
+                    handleRightTurn();
+                } else if (currentDirection === 'u' || currentDirection === 'd') {
+                    if (lastDirection === 'l') {
+                        handleBackTurn(2500);
+                    } else if (lastDirection === 'r') {
+                        handleForwardTurn();
+                    } else if (lastDirection === 'b') {
+                        handleRightTurn(2500);
+                    } else {
+                        handleLeftTurn();
+                    }
                 }
-            }
-        }
 
-        if (keyboard.down("right") || keyboard.down("D")) {
-            if (currentDirection === 'f') {
-                handleRightTurn();
-            } else if (currentDirection === 'l') {
-                handleForwardTurn();
-            } else if (currentDirection === 'r') {
-                handleBackTurn(2500);
-            } else if (currentDirection === 'b') {
-                handleLeftTurn();
-            } else if (currentDirection === 'u' || currentDirection === 'd') {
-                if (lastDirection === 'b') {
-                    handleLeftTurn();
-                } else if (lastDirection === 'r') {
+                isKeyboardReady = false;
+            }
+
+            if (keyboard.down("right") || keyboard.down("D")) {
+                if (currentDirection === 'f') {
+                    handleRightTurn();
+                } else if (currentDirection === 'l') {
+                    handleForwardTurn();
+                } else if (currentDirection === 'r') {
                     handleBackTurn(2500);
-                } else if (lastDirection === 'l') {
-                    handleForwardTurn();
-                } else {
-                    handleRightTurn();
-                }
-            }
-        }
-
-        if (keyboard.down("up") || keyboard.down("W")) {
-            if (currentDirection === 'f' || currentDirection === 'l' ||
-                currentDirection === 'r' || currentDirection === 'b') {
-                handleUpTurn();
-            } else if (currentDirection === 'u' || currentDirection === 'd') {
-                if (lastDirection === 'l') {
+                } else if (currentDirection === 'b') {
                     handleLeftTurn();
-                } else if (lastDirection === 'r') {
-                    handleRightTurn();
-                } else if (lastDirection === 'b') {
-                    handleBackTurn();
-                } else {
-                    handleForwardTurn();
+                } else if (currentDirection === 'u' || currentDirection === 'd') {
+                    if (lastDirection === 'b') {
+                        handleLeftTurn();
+                    } else if (lastDirection === 'r') {
+                        handleBackTurn(2500);
+                    } else if (lastDirection === 'l') {
+                        handleForwardTurn();
+                    } else {
+                        handleRightTurn();
+                    }
                 }
-            }
-        }
 
-        if (keyboard.down("down") || keyboard.down("S")) {
-            if (currentDirection === 'f' || currentDirection === 'l' ||
-                currentDirection === 'r' || currentDirection === 'b') {
-                handleDownTurn();
-            } else if (currentDirection === 'u' || currentDirection === 'd') {
-                if (lastDirection === 'l') {
-                    handleRightTurn();
-                } else if (lastDirection === 'r') {
-                    handleLeftTurn();
-                } else if (lastDirection === 'b') {
-                    handleForwardTurn();
-                } else {
-                    handleBackTurn();
+                isKeyboardReady = false;
+            }
+
+            if (keyboard.down("up") || keyboard.down("W")) {
+                if (currentDirection === 'f' || currentDirection === 'l' ||
+                    currentDirection === 'r' || currentDirection === 'b') {
+                    handleUpTurn();
+                } else if (currentDirection === 'u' || currentDirection === 'd') {
+                    if (lastDirection === 'l') {
+                        handleLeftTurn();
+                    } else if (lastDirection === 'r') {
+                        handleRightTurn();
+                    } else if (lastDirection === 'b') {
+                        handleBackTurn();
+                    } else {
+                        handleForwardTurn();
+                    }
                 }
+
+                isKeyboardReady = false;
+            }
+
+            if (keyboard.down("down") || keyboard.down("S")) {
+                if (currentDirection === 'f' || currentDirection === 'l' ||
+                    currentDirection === 'r' || currentDirection === 'b') {
+                    handleDownTurn();
+                } else if (currentDirection === 'u' || currentDirection === 'd') {
+                    if (lastDirection === 'l') {
+                        handleRightTurn();
+                    } else if (lastDirection === 'r') {
+                        handleLeftTurn();
+                    } else if (lastDirection === 'b') {
+                        handleForwardTurn();
+                    } else {
+                        handleBackTurn();
+                    }
+                }
+
+                isKeyboardReady = false;
             }
         }
     }
@@ -488,6 +498,8 @@
         removeObject(currentSnakeFood);
         addNewSnakeSegment();
         addSnakeFood();
+
+        wasSegmentAdded = true;
 
         if (ANIMATION_DELAY > MIN_ANIMATION_DELAY)
             ANIMATION_DELAY--;
@@ -530,6 +542,7 @@
             if (animationIterations % ANIMATION_DELAY === 0) {
                 if (!wasSegmentAdded) {
                     updateSnake();
+                    isKeyboardReady = true;
                 } else {
                     wasSegmentAdded = false
                 }
@@ -552,6 +565,5 @@
         animate();
     }
 
-    introTween() //remove
     document.getElementById("startButton").addEventListener("click", introTween, false);
 })();
