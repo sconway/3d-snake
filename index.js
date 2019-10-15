@@ -3,6 +3,7 @@
         camera,
         canvas,
         controls,
+        clock = new THREE.Clock(),
         top, bottom, front, back, left, right,
         currentDirection = 'f',
         lastDirection = 'f',
@@ -115,22 +116,28 @@
             side: THREE.DoubleSide,
             transparent: true,
             opacity: 0.1,
+            emissive: new THREE.Color(0xff0000)
         });
     }
 
     function createCustomMaterial() {
-        return new THREE.ShaderMaterial({
-            uniforms:
-            {
-                "c": { type: "f", value: 0.9 },
-                "p": { type: "f", value: 0.3 },
-                glowColor: { type: "c", value: new THREE.Color(0xffffff) },
-                viewVector: { type: "v3", value: camera.position }
-            },
-            vertexShader: document.getElementById('vertexShader').textContent,
-            fragmentShader: document.getElementById('fragmentShader').textContent,
-            side: THREE.FrontSide,
-            blending: THREE.NormalBlending
+        // return new THREE.ShaderMaterial({
+        //     uniforms:
+        //     {
+        //         "c": { type: "f", value: 0.9 },
+        //         "p": { type: "f", value: 0.3 },
+        //         glowColor: { type: "c", value: new THREE.Color(0xffffff) },
+        //         viewVector: { type: "v3", value: camera.position }
+        //     },
+        //     vertexShader: document.getElementById('vertexShader').textContent,
+        //     fragmentShader: document.getElementById('fragmentShader').textContent,
+        //     side: THREE.FrontSide,
+        //     blending: THREE.NormalBlending
+        // });
+        return new THREE.MeshLambertMaterial({
+            color: new THREE.Color(0xffffff),
+            emissive: new THREE.Color(0x0000ff),
+            emissiveIntensity: 5
         });
     }
 
@@ -204,8 +211,11 @@
         var size = Math.random() * 30 + 80;
         var cubeGeometry = new THREE.BoxGeometry(size, size, size);
         var material = new THREE.MeshLambertMaterial({
-            color: new THREE.Color(0xffffff * Math.random())
+            // color: new THREE.Color(0xffffff * Math.random())
+            emissive: new THREE.Color(0xffffff * Math.random()),
+            emissiveIntensity: 100
         });
+
         currentSnakeFood = new THREE.Mesh(cubeGeometry, material);
 
         currentSnakeFood.position.set(
@@ -293,22 +303,22 @@
         var distanceToRight = Math.abs((right.position.x - SNAKE[0].position.x) / 30);
 
         top.material.opacity = 1 / distanceToTop
-        top.material.color.setRGB(255 - distanceToTop, 0, 0);
+        top.material.emissiveIntensity = 250 / distanceToTop // olor.setRGB(255 - distanceToTop, 0, 0);
 
         bottom.material.opacity = 1 / distanceToBottom
-        bottom.material.color.setRGB(255 - distanceToBottom, 0, 0);
+        bottom.material.emissiveIntensity = 250 / distanceToBottom // /.color.setRGB(255 - distanceToBottom, 0, 0);
 
         back.material.opacity = 1 / distanceToBack
-        back.material.color.setRGB(255 - distanceToBack, 0, 0);
+        back.material.emissiveIntensity = 250 / distanceToBack // color.setRGB(255 - distanceToBack, 0, 0);
 
         front.material.opacity = 1 / distanceToFront
-        front.material.color.setRGB(255 - distanceToFront, 0, 0);
+        front.material.emissiveIntensity = 250 / distanceToFront // .color.setRGB(255 - distanceToFront, 0, 0);
 
         right.material.opacity = 1 / distanceToRight
-        right.material.color.setRGB(255 - distanceToRight, 0, 0);
+        right.material.emissiveIntensity = 250 / distanceToRight // .color.setRGB(255 - distanceToRight, 0, 0);
 
         left.material.opacity = 1 / distanceToLeft
-        left.material.color.setRGB(255 - distanceToLeft, 0, 0);
+        left.material.emissiveIntensity = 250 / distanceToLeft // color.setRGB(255 - distanceToLeft, 0, 0);
     }
 
     function updateCameraPosition(newX, newY, newZ) {
@@ -538,6 +548,9 @@
             controls.update();
             TWEEN.update();
             camera.lookAt(scene.position);
+
+            currentSnakeFood.rotation.x += 0.01;
+            currentSnakeFood.rotation.y += 0.01;
 
             if (animationIterations % ANIMATION_DELAY === 0) {
                 if (!wasSegmentAdded) {

@@ -35,62 +35,24 @@
         }
     </script>
 
-    <script id="vertexShader2" type="x-shader/x-vertex">
-        #define GLSLIFY 1
-        // Texture varyings
-        varying vec2 v_uv;
-
-        /*
-        * The main program
-        */
-        void main() {
-            // Calculate the varyings
-            v_uv = uv;
-
-            // Vertex shader output
-            gl_Position = vec4(position, 1.0);
-        }
+    <script id="vertexShaderGlow" type="x-shader/x-vertex">
+        uniform float amplitude;
+    attribute vec3 displacement;
+    attribute vec3 customColor;
+    varying vec3 vColor;
+    void main() {
+      vec3 newPosition = position + amplitude * displacement;
+      vColor = customColor;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
+    }
     </script>
 
-    <script id="fragmentShader2" type="x-shader/x-vertex">
-        #define GLSLIFY 1
-        // Common uniforms
-        uniform vec2 u_resolution;
-        uniform vec2 u_mouse;
-        uniform float u_time;
-        uniform float u_frame;
-
-        // Texture uniforms
-        uniform sampler2D u_texture;
-
-        // Texture varyings
-        varying vec2 v_uv;
-
-        /*
-        * The main program
-        */
+    <script id="fragmentShaderGlow" type="x-shader/x-fragment">
+        uniform vec3 color;
+        uniform float opacity;
+        varying vec3 vColor;
         void main() {
-            // Calculate the color offset directions
-            float angle = u_time;
-            vec2 red_offset = vec2(cos(angle), sin(angle));
-            angle += radians(120.0);
-            vec2 green_offset = vec2(cos(angle), sin(angle));
-            angle += radians(120.0);
-            vec2 blue_offset = vec2(cos(angle), sin(angle));
-
-            // Calculate the offset size as a function of the pixel distance to the center
-            float offset_size = 0.1 * length(gl_FragCoord.xy - 0.5 * u_resolution);
-
-            // Scale the offset size by the relative mouse position
-            offset_size *= u_mouse.x / u_resolution.x;
-
-            // Extract the pixel color values from the input texture
-            float red = texture2D(u_texture, v_uv - offset_size * red_offset / u_resolution).r;
-            float green = texture2D(u_texture, v_uv - offset_size * green_offset / u_resolution).g;
-            float blue = texture2D(u_texture, v_uv - offset_size * blue_offset / u_resolution).b;
-
-            // Fragment shader output
-            gl_FragColor = vec4(red, green, blue, 1.0);
+          gl_FragColor = vec4( vColor * color, opacity );
         }
     </script>
 </head>
@@ -128,6 +90,7 @@
     </aside>
 
     <script src="https://threejs.org/build/three.min.js"></script>
+    <script src="shaderFrog.min.js"></script>
     <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
     <script src="https://github.com/mrdoob/stats.js/blob/master/build/stats.js"></script>
     <script src="https://stemkoski.github.io/Three.js/js/KeyboardState.js"></script>
