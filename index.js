@@ -64,13 +64,15 @@
         SNAKE = [];
         document.getElementById("outro").classList.remove("fade-in");
         emptyContainer();
+        updateScore(true);
         init();
     }
 
     function initRenderer() {
         container = document.getElementById("canvas");
         renderer = new THREE.WebGLRenderer({
-            alpha: true
+            alpha: true,
+            antialias: true
         });
         renderer.setClearColor(0xffffff, 0);
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -86,7 +88,7 @@
             1,
             20000
         );
-        camera.position.set(3000, 4000, -6000);
+        camera.position.set(3000, 4000, -8000);
     }
 
     function initScene() {
@@ -115,27 +117,13 @@
             color: new THREE.Color(0x00ff00),
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0.1,
+            opacity: 0.2,
             emissive: new THREE.Color(0xff0000)
         });
     }
 
     function createCustomMaterial() {
-        // return new THREE.ShaderMaterial({
-        //     uniforms:
-        //     {
-        //         "c": { type: "f", value: 0.9 },
-        //         "p": { type: "f", value: 0.3 },
-        //         glowColor: { type: "c", value: new THREE.Color(0xffffff) },
-        //         viewVector: { type: "v3", value: camera.position }
-        //     },
-        //     vertexShader: document.getElementById('vertexShader').textContent,
-        //     fragmentShader: document.getElementById('fragmentShader').textContent,
-        //     side: THREE.FrontSide,
-        //     blending: THREE.NormalBlending
-        // });
         return new THREE.MeshLambertMaterial({
-            color: new THREE.Color(0xffffff),
             emissive: new THREE.Color(0x0000ff),
             emissiveIntensity: 5
         });
@@ -143,25 +131,25 @@
 
     function addGameContainer() {
         var planeGeometry = new THREE.PlaneBufferGeometry(CONTAINER_SIZE, CONTAINER_SIZE, 32)
-        var topGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x666666, 0x666666);
+        var topGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x444444, 0x444444);
         topGrid.position.y = CONTAINER_SIZE / 2;
 
-        var bottomGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x666666, 0x666666);
+        var bottomGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x444444, 0x444444);
         bottomGrid.position.y = -CONTAINER_SIZE / 2;
 
-        var frontGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x666666, 0x666666);
+        var frontGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x444444, 0x444444);
         frontGrid.rotation.x = toRadians(90);
         frontGrid.position.z = -CONTAINER_SIZE / 2;
 
-        var backGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x666666, 0x666666);
+        var backGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x444444, 0x444444);
         backGrid.rotation.x = toRadians(90);
         backGrid.position.z = CONTAINER_SIZE / 2;
 
-        var rightGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x666666, 0x666666);
+        var rightGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x444444, 0x444444);
         rightGrid.rotation.z = toRadians(90);
         rightGrid.position.x = -CONTAINER_SIZE / 2;
 
-        var leftGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x666666, 0x666666);
+        var leftGrid = new THREE.GridHelper(CONTAINER_SIZE, 10, 0x444444, 0x444444);
         leftGrid.rotation.z = toRadians(90);
         leftGrid.position.x = CONTAINER_SIZE / 2;
 
@@ -208,12 +196,11 @@
     }
 
     function addSnakeFood() {
-        var size = Math.random() * 30 + 80;
+        var size = Math.random() * 30 + 100;
         var cubeGeometry = new THREE.BoxGeometry(size, size, size);
         var material = new THREE.MeshLambertMaterial({
-            // color: new THREE.Color(0xffffff * Math.random())
-            emissive: new THREE.Color(0xffffff * Math.random()),
-            emissiveIntensity: 100
+            emissive: new THREE.Color(0xff0000),
+            emissiveIntensity: 10
         });
 
         currentSnakeFood = new THREE.Mesh(cubeGeometry, material);
@@ -287,11 +274,13 @@
         SNAKE.unshift(SNAKE.pop());
     }
 
-    function updateScore() {
+    function updateScore(isReset) {
         var scoreHolder = document.getElementById("score");
-        SCORE++;
-        if (scoreHolder)
+
+        if (scoreHolder) {
+            if (!isReset) SCORE++;
             scoreHolder.innerHTML = SCORE;
+        }
     }
 
     function updateWallColors() {
@@ -302,34 +291,23 @@
         var distanceToLeft = Math.abs((left.position.x - SNAKE[0].position.x) / 30);
         var distanceToRight = Math.abs((right.position.x - SNAKE[0].position.x) / 30);
 
-        top.material.opacity = 1 / distanceToTop
-        top.material.emissiveIntensity = 250 / distanceToTop // olor.setRGB(255 - distanceToTop, 0, 0);
+        top.material.opacity = 1 / distanceToTop;
+        top.material.emissiveIntensity = 250 / distanceToTop;
 
-        bottom.material.opacity = 1 / distanceToBottom
-        bottom.material.emissiveIntensity = 250 / distanceToBottom // /.color.setRGB(255 - distanceToBottom, 0, 0);
+        bottom.material.opacity = 1 / distanceToBottom;
+        bottom.material.emissiveIntensity = 250 / distanceToBottom;
 
-        back.material.opacity = 1 / distanceToBack
-        back.material.emissiveIntensity = 250 / distanceToBack // color.setRGB(255 - distanceToBack, 0, 0);
+        back.material.opacity = 1 / distanceToBack;
+        back.material.emissiveIntensity = 250 / distanceToBack;
 
-        front.material.opacity = 1 / distanceToFront
-        front.material.emissiveIntensity = 250 / distanceToFront // .color.setRGB(255 - distanceToFront, 0, 0);
+        front.material.opacity = 1 / distanceToFront;
+        front.material.emissiveIntensity = 250 / distanceToFront;
 
-        right.material.opacity = 1 / distanceToRight
-        right.material.emissiveIntensity = 250 / distanceToRight // .color.setRGB(255 - distanceToRight, 0, 0);
+        right.material.opacity = 1 / distanceToRight;
+        right.material.emissiveIntensity = 250 / distanceToRight;
 
-        left.material.opacity = 1 / distanceToLeft
-        left.material.emissiveIntensity = 250 / distanceToLeft // color.setRGB(255 - distanceToLeft, 0, 0);
-    }
-
-    function updateCameraPosition(newX, newY, newZ) {
-        new TWEEN.Tween(camera.position)
-            .to({
-                x: newX,
-                y: newY,
-                z: newZ
-            }, 500)
-            .easing(TWEEN.Easing.Sinusoidal.Out)
-            .start();
+        left.material.opacity = 1 / distanceToLeft;
+        left.material.emissiveIntensity = 250 / distanceToLeft;
     }
 
     function addNewSnakeSegment() {
@@ -380,11 +358,6 @@
     function handleBackTurn(offset = -2500) {
         lastDirection = currentDirection;
         currentDirection = 'b';
-    }
-
-    function keyboardDebounce() {
-        isKeyboardReady = false;
-        setTimeout(() => { isKeyboardReady = true; }, 200);
     }
 
     function checkKeyPress() {
@@ -480,8 +453,6 @@
     }
 
     function onWindowResize() {
-        windowHalfX = window.innerWidth / 2;
-        windowHalfY = window.innerHeight / 2;
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -546,7 +517,6 @@
 
             renderer.render(scene, camera);
             controls.update();
-            TWEEN.update();
             camera.lookAt(scene.position);
 
             currentSnakeFood.rotation.x += 0.01;
